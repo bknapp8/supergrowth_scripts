@@ -1,4 +1,4 @@
-# supergrowth_scripts
+# Supergrowth Scripts
 Matlab scripts used in Knapp et al. 
 
 This repository contains Matlab scripts used for:
