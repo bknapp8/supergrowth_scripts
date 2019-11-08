@@ -1,0 +1,129 @@
+close all;
+
+t_int = 5; % Frame interval in minutes
+res = 0.11; % Pixel resolution in microns/pixel
+
+tree = TOTALS;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Plot smoothed?
+bigT = [];
+bigR = [];
+bigL = [];
+figure;
+
+% For counting cell trajectories of proper length
+Ncell = 0;
+
+for k=1:length(tree)
+    clearvars L T;
+    endcut = 10;
+    begcut =10; % Use 1 if no cutting at beginning
+    if length(tree(k).traj)>20
+        
+        smf = 15;
+        for j=1:length(tree(k).traj)
+            L(j) = tree(k).traj(j).area;
+            T(j) = tree(k).traj(j).frame_num-1;
+        end
+        colr = rand(1,3);
+        
+        % Try using filter of L
+        if false
+            Lsm = smooth(T,L,0.2,'rloess');
+            L = Lsm;
+        end
+            
+        
+        
+        R = smooth(smooth(gradient(log(L)), smf),smf)/t_int*60;
+%         R = (windowlines_2((T(begcut:end-endcut))'*t_int, (smooth(L(begcut:end-endcut), smf)*res),3))'*60;
+        
+
+        % Filter for noisy growth rates
+        Rcut1 = 3;
+        Rcut2 = 0;
+        mean(R);
+        noiseR = std(R)/mean(R);
+        minR = min(R);
+        maxL = 20;
+        if (max(R)<Rcut1 & min(R)>Rcut2 & mean(R)>-0.2 & noiseR<2)
+            Ncell = Ncell + 1;
+            colr = rand(1,3);
+            bigL =[bigL; smooth(L(begcut:end-endcut),smf)*res];
+            normL = 1;
+            bigT = [bigT; (T(begcut:end-endcut))'*t_int];
+            bigR = [bigR; R(begcut:end-endcut)];
+
+            subplot(2,1,1);
+            plot(T(begcut:end-endcut)*t_int/60, (L(begcut:end-endcut))*res, 'color', colr, 'linewidth', 1);
+            set(gca, 'fontsize', 15);
+            % Label trajectories for correction
+            if true
+               text(max(T(end-endcut)*t_int)/60,(L(end-endcut)),num2str(k));
+            end
+
+
+            hold on;
+            subplot(2,1,2);   
+
+            % If attempting to plot mitosis in length, but not in rates
+            %%%%%%%%%%%%%%%%%%%%%%%
+    %         endR = 7;o
+    %         plot(T(begcut:end-endcut-endR)*t_int/60, R(1:end-endR),'color', colr, 'linewidth', 1);
+            %%%%%%%%%%%%%%%%%%%%%%%%
+
+            plot(T(begcut:end-endcut)*t_int/60, R(begcut:end-endcut),'color', colr, 'linewidth', 1);
+            if true
+               text(max(T(end-endcut)*t_int)/60,R(end-endcut),num2str(k));
+            end
+            %ylim([0 0.7]);
+            hold on;
+        end
+            
+    end
+end
+
+disp('Number of trajectories analyzed:');
+disp(Ncell);
+%ylim([0 10]);
+set(gca, 'fontsize', 15);
+xlabel('Time (h)')
+
+%%
+% Plot binned rates?
+if true
+    gx = 0:t_int*5:max(bigT);
+%     gx = 0:t_int*3:13*60;
+    [b,n,s] = bindata(bigT,bigR, gx);
+%     b(1) = b(4);
+    figure;
+    if true
+        plot(bigT/60, bigR, 'b.');
+    end
+    hold on;
+    plot(gx/60,b,'ro');
+    ylim([-0.05 0.7]);
+    xlim([0 max(bigT)/60]);
+    set(gca, 'fontsize', 20);
+    xlabel('Time (h)');
+    ylabel('Exponential length rate (h^{-1})');
+    set(gca, 'box', 'off');
+    title(' Log-Length Rates', 'fontweight', 'bold');
+end
+
+%%%%%%%%%%%%%%%%%%%%%
+% Do binned rates with shaded error bars
+figure;
+shadedErrorBar(gx,b,s, 'b', 0.1);
+set(gca, 'fontsize', 20);
+xlabel('Time (min)');
+ylabel('Growth rate (h^{-1})');
+set(gca, 'box', 'off');
+ylim([-0.05 2]);
+% xlim([0 max(gx/60)]);
+
+% bigT = bigT/60;
+
+gxn = gx;
+bn = b;
