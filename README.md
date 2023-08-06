@@ -1,5 +1,5 @@
 # Supergrowth Scripts
-Matlab scripts used in Knapp et al. 
+Matlab scripts used in Knapp et al. "Decoupling of Rates of Protein Synthesis from Cell Expansion Leads to Supergrowth" (2019)
 
 ## Contents
 
